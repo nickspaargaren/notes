@@ -1,25 +1,26 @@
-//
-//  ContentView.swift
-//  notes
-//
-//  Created by Nick Spaargaren on 15/05/2024.
-//
-
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @Query private var items: [Time]
+    
+    @State private var isAddingItem = false
+    @State private var gamertag = ""
+    @State private var circuit = ""
+    @State private var time = ""
+    
     var body: some View {
         NavigationSplitView {
             List {
                 ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(item.gamertag).fontWeight(.semibold).lineLimit(1)
+                            Text(item.time).font(.system(size: 14)).foregroundColor(.gray).lineLimit(1)
+                        }
+                        Spacer()
+                        Text(item.circuit)
                     }
                 }
                 .onDelete(perform: deleteItems)
@@ -34,7 +35,9 @@ struct ContentView: View {
                 }
 #endif
                 ToolbarItem {
-                    Button(action: addItem) {
+                    Button(action: {
+                        isAddingItem = true
+                    }) {
                         Label("Add Item", systemImage: "plus")
                     }
                 }
@@ -42,15 +45,33 @@ struct ContentView: View {
         } detail: {
             Text("Select an item")
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+        .sheet(isPresented: $isAddingItem) {
+            VStack {
+                TextField("Gamertag", text: $gamertag)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                TextField("Circuit", text: $circuit)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                TextField("Time", text: $time)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                Button(action: addItem) {
+                    Text("Add Item")
+                }
+            }
+            .padding()
         }
     }
-
+    
+    private func addItem() {
+        withAnimation {
+            let newItem = Time(gamertag: gamertag, circuit: circuit, time: time)
+            modelContext.insert(newItem)
+            isAddingItem = false
+        }
+    }
+    
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
@@ -58,9 +79,18 @@ struct ContentView: View {
             }
         }
     }
+    
+    private var groupedItems: [(key: String, count: Int)] {
+        let grouped = Dictionary(grouping: items, by: { $0.gamertag })
+        return grouped.map { (key: $0.key, count: $0.value.count) }.sorted(by: { $0.count > $1.count })
+    }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+#if DEBUG
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .modelContainer(for: Time.self, inMemory: true)
+    }
 }
+#endif

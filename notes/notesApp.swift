@@ -12,7 +12,7 @@ import SwiftData
 struct notesApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Time.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +25,17 @@ struct notesApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView {
+                ContentView()
+                    .tabItem {
+                    Label("Home", systemImage: "house")
+                }
+                StatsView()
+                    .tabItem {
+                    Label("Stats", systemImage: "chart.xyaxis.line")
+                }
+            }
+         
         }
         .modelContainer(sharedModelContainer)
     }
